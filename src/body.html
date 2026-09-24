@@ -1,0 +1,169 @@
+<div class="app" id="app">
+  <section class="scene" id="scene" aria-label="腕に抱きついて眠る猫">
+    <canvas id="stage" aria-hidden="true"></canvas>
+    <div class="dim" id="dim"></div>
+    <div class="clock">
+      <div class="clock-time" id="clockTime">--:--</div>
+      <div class="clock-sub" id="clockSub">&nbsp;</div>
+    </div>
+    <div class="scene-hint" id="sceneHint" hidden></div>
+  </section>
+
+  <aside class="panel" id="panel" aria-label="操作パネル">
+    <header class="panel-head">
+      <h1>添い寝ねこアラーム</h1>
+      <span class="badge" id="soundBadge" title="いま使っている音">仮の音</span>
+    </header>
+
+    <div class="readiness" id="readiness" role="status" aria-live="polite" data-level="idle"><span class="dot"></span><span id="readinessText">猫を選んで、起きる時刻を決めてください。</span></div>
+
+    <div class="resume" id="resumeBox" hidden>
+      <p><strong>添い寝を再開してください。</strong><br>再読込で音声が止まりました。このままではアラームの音は鳴りません。</p>
+      <div class="row two">
+        <button type="button" class="btn primary" id="resumeBtn">再開する</button>
+        <button type="button" class="btn ghost" id="resumeEndBtn">添い寝をやめる</button>
+      </div>
+    </div>
+
+    <section class="block" aria-labelledby="catTitle">
+      <h2 id="catTitle">猫をえらぶ</h2>
+      <div class="cat-list" id="catList" role="radiogroup" aria-labelledby="catTitle"></div>
+      <p class="cat-trait" id="catTrait"></p>
+    </section>
+
+    <section class="block" aria-labelledby="alarmTitle">
+      <div class="block-head">
+        <h2 id="alarmTitle">起きる時刻</h2>
+        <label class="switch" for="alarmEnabled"><input type="checkbox" id="alarmEnabled" checked><span>アラームを使う</span></label>
+      </div>
+      <div class="time-row">
+        <input type="time" id="alarmTime" value="07:00" step="60" aria-label="起きる時刻">
+        <div class="time-preview" id="timePreview" aria-live="polite"></div>
+      </div>
+      <div class="row">
+        <button type="button" class="btn soft small" id="armBtn">この時刻にセット</button>
+        <button type="button" class="btn danger small" id="cancelBtn" hidden>アラーム解除</button>
+      </div>
+    </section>
+
+    <div class="main-actions">
+      <button type="button" class="btn primary big" id="startBtn">添い寝をはじめる</button>
+      <div class="row two">
+        <button type="button" class="btn soft" id="testSoundBtn">音を試す</button>
+        <button type="button" class="btn soft" id="test10Btn">10秒後に試す</button>
+      </div>
+    </div>
+
+    <section class="block" aria-labelledby="statusTitle">
+      <h2 id="statusTitle">いまの状態</h2>
+      <dl class="status-list">
+        <div><dt>音声</dt><dd><span class="pill" id="stAudio">未準備</span><span class="st-text" id="stAudioText"></span></dd></div>
+        <div><dt>アラーム</dt><dd><span class="pill" id="stAlarm">未セット</span><span class="st-text" id="stAlarmText"></span></dd></div>
+        <div><dt>スリープ防止</dt><dd><span class="pill" id="stWake">未使用</span><span class="st-text" id="stWakeText"></span></dd></div>
+      </dl>
+    </section>
+
+    <details class="block" id="dSettings">
+      <summary>音量と表示</summary>
+      <div class="field"><label for="volPurr">ゴロゴロの音量 <output id="volPurrOut">45</output></label><input type="range" id="volPurr" min="0" max="100" step="1" value="45"></div>
+      <div class="field"><label for="volAlarm">アラーム（鳴き声）の音量 <output id="volAlarmOut">80</output></label><input type="range" id="volAlarm" min="0" max="100" step="1" value="80"></div>
+      <p class="note">アラームは小さな声から始まり、約16秒かけてこの音量まで上がります。</p>
+      <div class="field"><label for="motion">動きの強さ <output id="motionOut">標準</output></label><input type="range" id="motion" min="0" max="150" step="5" value="100"></div>
+      <label class="switch" for="motionStop"><input type="checkbox" id="motionStop"><span>動きを止める（アラームの表示は動きます）</span></label>
+      <div class="row"><button type="button" class="btn soft small" id="demoBtn">しぐさを順番に見る（約30秒）</button></div>
+      <p class="note">ふだんは数十秒〜数分おきに、不規則に目を開けたり、舐めたりします。</p>
+      <label class="switch" for="nightMode"><input type="checkbox" id="nightMode"><span>夜間モード</span></label>
+      <div class="field"><label for="nightBright">夜間の明るさ <output id="nightBrightOut">45%</output></label><input type="range" id="nightBright" min="10" max="100" step="5" value="45"></div>
+      <p class="note">夜間モードは画面の表示を暗くするだけの機能です。端末の画面ロックとは別のものです。</p>
+    </details>
+
+    <details class="block" id="dSounds">
+      <summary>音を差し替える</summary>
+      <p class="note">いまは Web Audio で作った<strong>仮の音</strong>です。実際の猫の録音ではありません。利用する権利のある音声ファイル（mp3・m4a・wav など）に差し替えられます。</p>
+      <div class="file-row">
+        <div class="now">ゴロゴロ音：<b id="purrNow">仮の音（合成）</b></div>
+        <input type="file" id="purrFile" accept="audio/*">
+        <div class="row"><button type="button" class="btn ghost small" id="purrReset">仮の音に戻す</button></div>
+      </div>
+      <div class="file-row">
+        <div class="now">鳴き声：<b id="meowNow">仮の音（合成・3種類）</b></div>
+        <input type="file" id="meowFile" accept="audio/*" multiple>
+        <p class="note">短い「ニャー」を1〜5個まとめて選べます。順番に使い、重ならないように鳴らします。</p>
+        <div class="row"><button type="button" class="btn ghost small" id="meowReset">仮の音に戻す</button></div>
+      </div>
+      <p class="note" id="soundStoreNote"></p>
+    </details>
+
+    <details class="block" id="dCats">
+      <summary>猫の画像を追加・調整</summary>
+      <p class="subhead">いまの猫の位置を調整</p>
+      <div class="grid2">
+        <div class="field"><label for="plX">横 <output id="plXOut"></output></label><input type="range" id="plX" min="0" max="1254" step="2"></div>
+        <div class="field"><label for="plY">縦 <output id="plYOut"></output></label><input type="range" id="plY" min="0" max="1254" step="2"></div>
+        <div class="field"><label for="plS">大きさ <output id="plSOut"></output></label><input type="range" id="plS" min="0.3" max="4" step="0.02"></div>
+        <div class="field"><label for="plR">回転 <output id="plROut"></output></label><input type="range" id="plR" min="-60" max="60" step="1"></div>
+      </div>
+      <div class="row"><button type="button" class="btn ghost small" id="plReset">位置を元に戻す</button></div>
+
+      <p class="subhead">猫を追加する</p>
+      <p class="note">ポーズを並べた1枚の画像（コマ割り画像）を選びます。付属の猫と同じ「2列×3行・背景透過」なら、そのまま追加できます。</p>
+      <input type="file" id="sheetFile" accept="image/png,image/webp,image/jpeg">
+      <div class="grid2">
+        <div class="field"><label for="sheetCols">列の数</label><input type="number" id="sheetCols" min="1" max="6" value="2"></div>
+        <div class="field"><label for="sheetRows">行の数</label><input type="number" id="sheetRows" min="1" max="6" value="3"></div>
+      </div>
+      <div class="field"><span class="label">画像の種類</span>
+        <select id="sheetMode" aria-label="画像の種類">
+          <option value="overlay">背景が透過されている（腕の写真に重ねる）</option>
+          <option value="full">腕や寝具も写っている（コマをそのまま表示）</option>
+        </select>
+      </div>
+      <div class="map-grid" id="mapGrid"></div>
+      <canvas class="preview-canvas" id="sheetPreview" width="360" height="200" hidden></canvas>
+      <div class="grid2">
+        <div class="field"><label for="sheetName">名前</label><input type="text" id="sheetName" maxlength="12" placeholder="例：三毛猫"></div>
+        <div class="field"><label for="sheetPersona">個性（演出）</label><select id="sheetPersona"></select></div>
+      </div>
+      <div class="row"><button type="button" class="btn soft small" id="sheetAdd" disabled>この猫を追加</button></div>
+      <p class="note" id="sheetMsg" aria-live="polite"></p>
+      <ul class="custom-list" id="customList"></ul>
+
+      <p class="subhead">背景の写真</p>
+      <div class="file-row">
+        <div class="now">いまの背景：<b id="bgNow">付属の腕の写真</b></div>
+        <input type="file" id="bgFile" accept="image/*">
+        <div class="row"><button type="button" class="btn ghost small" id="bgReset">付属の写真に戻す</button></div>
+      </div>
+    </details>
+
+    <details class="block help" id="dHelp">
+      <summary>使い方と注意</summary>
+      <ol>
+        <li>猫をえらび、起きる時刻を入れます（過ぎた時刻は翌日になります）。</li>
+        <li>「音を試す」で音量を確かめます。</li>
+        <li>「添い寝をはじめる」を押し、この画面を開いたまま端末をスリープさせずに置きます。</li>
+        <li>時刻になると猫が顔を上げて鳴きます。「起きたよ」で止まり、「あと5分」で5分後にもう一度起こします。</li>
+      </ol>
+      <ul>
+        <li>ブラウザのアプリなので、画面ロック中・スリープ中・タブを閉じた後は鳴らせません。充電しながら、自動ロックをオフにしてお使いください。</li>
+        <li>「スリープ防止」はこの画面が表示されている間だけ効く仕組みで、すべての停止を防げるわけではありません。</li>
+        <li>別のタブを見ている間はタイマーが遅れることがあります。戻ったときに時刻を確認し、遅れて鳴らした場合はその旨を表示します。</li>
+        <li>猫の個性は演出上の設定で、実際の猫種や毛柄の性格を表すものではありません。</li>
+        <li id="storeNote"></li>
+      </ul>
+    </details>
+  </aside>
+
+  <div class="alarm-sheet" id="alarmSheet" role="alertdialog" aria-modal="false" aria-labelledby="alarmMsg" hidden>
+    <p class="alarm-msg" id="alarmMsg">ニャー！ 起きる時間です</p>
+    <p class="alarm-late" id="alarmLate" hidden></p>
+    <p class="alarm-audio" id="alarmAudio" hidden>音が出ていません。<button type="button" class="btn soft small" id="alarmAudioBtn">音を出す</button></p>
+    <div class="alarm-buttons">
+      <button type="button" class="btn primary huge" id="wakeBtn">起きたよ</button>
+      <button type="button" class="btn soft huge" id="snoozeBtn">あと5分</button>
+    </div>
+    <button type="button" class="btn ghost small sheet-cancel" id="sheetCancelBtn">アラームを解除（スヌーズも取り消す）</button>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+</div>
