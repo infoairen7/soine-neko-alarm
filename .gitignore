@@ -1,0 +1,8 @@
+# 素材づくりの途中ファイル
+tools/asset_pipeline/*.npy
+tools/asset_pipeline/*.png
+__pycache__/
+*.pyc
+# テストの出力
+tests/out_*.png
+.DS_Store
